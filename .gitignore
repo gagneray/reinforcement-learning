@@ -10,3 +10,7 @@
 *.orig
 classes/
 out/
+
+target/
+
+BanditProblem_BatchResult_*.json

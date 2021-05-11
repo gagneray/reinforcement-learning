@@ -1,0 +1,12 @@
+{
+  "policies" : [ {
+    "name" : "E_GREEDY",
+    "epsilon" : 0.1
+  }, {
+    "name" : "UCB",
+    "c" : 2
+  } ],
+  "banditProblemCount" : 2000,
+  "k" : 10,
+  "totalSteps" : 1000
+}
