@@ -1,5 +1,6 @@
 package org.gagneray.rl.banditproblem.configurations;
 
+import org.gagneray.rl.banditproblem.dto.TestBedConfigurationDTO;
 import org.gagneray.rl.banditproblem.entities.ArmedBandit;
 import org.gagneray.rl.common.policies.ActionSectionPolicy;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class TestBedConfiguration {
 
     public TestBedConfiguration(List<ActionSectionPolicy<ArmedBandit>> policyList, int banditProblemCount, int k, int totalSteps) {
 
-        LOGGER.info("Create TestBed Configuration from policies {}, total steps={}, banditProblemCount={}, k={}", policyList, totalSteps,  banditProblemCount, k);
+        LOGGER.info("Create TestBed Configuration from policies {}, total steps={}, banditProblemCount={}, k={}", policyList, totalSteps, banditProblemCount, k);
 
         this.totalSteps = totalSteps;
         this.banditProblemCount = banditProblemCount;
@@ -38,6 +39,10 @@ public class TestBedConfiguration {
             banditProblemConfigurations.add(new BanditProblemConfiguration(policy, k));
         });
         this.banditProblemConfigurations = banditProblemConfigurations;
+    }
+
+    public TestBedConfiguration(TestBedConfigurationDTO testBedConfigurationDTO) {
+        this(testBedConfigurationDTO.getPolicies(), testBedConfigurationDTO.getBanditProblemCount(), testBedConfigurationDTO.getK(), testBedConfigurationDTO.getTotalSteps());
     }
 
     public List<BanditProblemConfiguration> getBanditProblemConfigurations() {

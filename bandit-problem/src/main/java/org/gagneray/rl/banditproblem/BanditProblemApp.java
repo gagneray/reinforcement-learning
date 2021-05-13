@@ -1,7 +1,6 @@
 package org.gagneray.rl.banditproblem;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.cli.*;
 import org.gagneray.rl.banditproblem.configurations.TestBedConfiguration;
@@ -45,18 +44,18 @@ public class BanditProblemApp {
             String[] values = commandLine.getOptionValues("testbed");
             String path = values[0];
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonNode = null;
+            TestBedConfigurationDTO testBedConfigurationDTO = null;
             try {
-                LOGGER.info("Parsing json configuration to TestBed Configuration from file {}", path);
-                jsonNode = mapper.readTree(new File(path));
+                LOGGER.info("Parsing TestBed Configuration from json file {}", path);
+                testBedConfigurationDTO = mapper.readValue(new File(path), TestBedConfigurationDTO.class);
             } catch (IOException e) {
                 LOGGER.error("Error while parsing json file configuration : {}", e.getMessage());
             }
 
-            TestBedConfigurationDTO testBedConfigurationDTO = new TestBedConfigurationDTO(jsonNode);
             LOGGER.info("TestBedConfigurationDTO created : {}", testBedConfigurationDTO);
 
-            TestBedConfiguration testBedConfiguration = new TestBedConfiguration(testBedConfigurationDTO.getPolicies(), testBedConfigurationDTO.getBanditProblemCount(), testBedConfigurationDTO.getK(), testBedConfigurationDTO.getTotalSteps());
+            assert testBedConfigurationDTO != null;
+            TestBedConfiguration testBedConfiguration = new TestBedConfiguration(testBedConfigurationDTO);
             BanditProblemTestBed testBed = new BanditProblemTestBed(testBedConfiguration);
             testBed.process();
 
