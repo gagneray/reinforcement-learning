@@ -1,6 +1,5 @@
 package org.gagneray.rl.banditproblem.services;
 
-import org.gagneray.rl.banditproblem.BanditProblemApp;
 import org.gagneray.rl.banditproblem.configurations.BanditProblemConfiguration;
 import org.gagneray.rl.banditproblem.configurations.TestBedConfiguration;
 import org.gagneray.rl.banditproblem.entities.ArmedBandit;
@@ -16,8 +15,8 @@ import smile.plot.swing.LinePlot;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BanditProblemTestBed {
@@ -26,7 +25,7 @@ public class BanditProblemTestBed {
 
     private final int totalSteps;
     private final Map<BanditProblemConfiguration, List<BanditProblem>> banditProblems;
-    private final Map<BanditProblemConfiguration, List<Double>> meanRewards;
+    private final Map<BanditProblemConfiguration, List<Double>> meanAverages;
     private int stepCount;
 
     public BanditProblemTestBed(TestBedConfiguration testBedConfiguration) {
@@ -35,11 +34,11 @@ public class BanditProblemTestBed {
         this.totalSteps = testBedConfiguration.getTotalSteps();
 
         banditProblems = new ConcurrentHashMap<>(testBedConfiguration.getBanditProblemConfigurations().size());
-        meanRewards = new ConcurrentHashMap<>(testBedConfiguration.getBanditProblemConfigurations().size());
+        meanAverages = new ConcurrentHashMap<>(testBedConfiguration.getBanditProblemConfigurations().size());
         testBedConfiguration.getBanditProblemConfigurations().parallelStream()
                 .forEach(banditProblemConfiguration -> {
                     banditProblems.put(banditProblemConfiguration, createBanditProblems(testBedConfiguration, banditProblemConfiguration));
-                    meanRewards.put(banditProblemConfiguration, new ArrayList<>(totalSteps));
+                    meanAverages.put(banditProblemConfiguration, new ArrayList<>(totalSteps));
                 });
 
     }
@@ -52,8 +51,8 @@ public class BanditProblemTestBed {
         return banditProblems;
     }
 
-    public Map<BanditProblemConfiguration, List<Double>> getMeanRewards() {
-        return meanRewards;
+    public Map<BanditProblemConfiguration, List<Double>> getMeanAverages() {
+        return meanAverages;
     }
 
     private List<BanditProblem> createBanditProblems(TestBedConfiguration testBedConfiguration, BanditProblemConfiguration banditProblemConfiguration) {
@@ -95,8 +94,8 @@ public class BanditProblemTestBed {
 
         banditProblems.entrySet().parallelStream()
                 .forEach(entry -> {
-                    double meanReward = performOneStep(entry.getValue());
-                    meanRewards.get(entry.getKey()).add(stepCount, meanReward);
+                    double oneStepAverage = performOneStep(entry.getValue());
+                    meanAverages.get(entry.getKey()).add(stepCount, oneStepAverage);
                 });
 
         stepCount++;
@@ -105,24 +104,37 @@ public class BanditProblemTestBed {
     }
 
     private double performOneStep(List<BanditProblem> banditProblemList) {
-        double oneStepMean = 0;
+        double oneStepAverage = 0;
         int banditProblemCount = 0;
         for (BanditProblem banditProblem : banditProblemList) {
             Reward reward = banditProblem.performOneStep();
             banditProblemCount++;
-            oneStepMean = EstimateUtils.computeSampleAverageIncremental(oneStepMean, banditProblemCount, reward.getValue());
+            oneStepAverage = EstimateUtils.computeSampleAverageIncremental(oneStepAverage, banditProblemCount, reward.getValue());
         }
 
-        return oneStepMean;
+        return oneStepAverage;
+    }
+
+    public TestBedResultDTO getResults() {
+
+        if (meanAverages.isEmpty()) {
+            throw new IllegalStateException("No testbed Result available");
+        }
+
+        if (stepCount < totalSteps) {
+            LOGGER.warn("Providing partial testbed results {}/{}", stepCount, totalSteps);
+        }
+
+        return new TestBedResultDTO(this);
     }
 
     public void plotMeanAverages() {
 
         LOGGER.info("Plotting mean average results on bandit testbed results");
 
-        Canvas canvas = new Canvas(new double[meanRewards.size()], new double[meanRewards.size()], true);
+        Canvas canvas = new Canvas(new double[meanAverages.size()], new double[meanAverages.size()], true);
 
-        meanRewards.forEach((banditProblemConfiguration, meanRewards) -> {
+        meanAverages.forEach((banditProblemConfiguration, meanRewards) -> {
             double[][] data = new double[totalSteps][2];
 
             for (int i = 0; i < totalSteps; i++) {
@@ -162,12 +174,12 @@ public class BanditProblemTestBed {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BanditProblemTestBed testBed = (BanditProblemTestBed) o;
-        return totalSteps == testBed.totalSteps && stepCount == testBed.stepCount && Objects.equals(banditProblems, testBed.banditProblems) && Objects.equals(meanRewards, testBed.meanRewards);
+        return totalSteps == testBed.totalSteps && stepCount == testBed.stepCount && Objects.equals(banditProblems, testBed.banditProblems) && Objects.equals(meanAverages, testBed.meanAverages);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(totalSteps, banditProblems, meanRewards, stepCount);
+        return Objects.hash(totalSteps, banditProblems, meanAverages, stepCount);
     }
 
     @Override
@@ -175,8 +187,47 @@ public class BanditProblemTestBed {
         return "BanditProblemTestBed{" +
                 "totalSteps=" + totalSteps +
                 ", banditProblems=" + banditProblems +
-                ", meanRewards=" + meanRewards +
+                ", meanRewards=" + meanAverages +
                 ", stepCount=" + stepCount +
                 '}';
+    }
+
+    public static class TestBedResultDTO {
+        private final Map<BanditProblemConfiguration, List<Double>> meanAverages;
+        private final int totalSteps;
+
+        public TestBedResultDTO(BanditProblemTestBed banditProblemTestBed) {
+            this.meanAverages = banditProblemTestBed.getMeanAverages();
+            this.totalSteps = banditProblemTestBed.getTotalSteps();
+        }
+
+        public Map<BanditProblemConfiguration, List<Double>> getMeanAverages() {
+            return meanAverages;
+        }
+
+        public int getTotalSteps() {
+            return totalSteps;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestBedResultDTO that = (TestBedResultDTO) o;
+            return totalSteps == that.totalSteps && Objects.equals(meanAverages, that.meanAverages);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(meanAverages, totalSteps);
+        }
+
+        @Override
+        public String toString() {
+            return "TestBedResultDTO{" +
+                    "result=" + meanAverages +
+                    ", totalSteps=" + totalSteps +
+                    '}';
+        }
     }
 }
