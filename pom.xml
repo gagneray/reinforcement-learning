@@ -89,5 +89,12 @@
 
     </build>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/gagneray/reinforcement-learning</url>
+        </repository>
+    </distributionManagement>
 
 </project>
