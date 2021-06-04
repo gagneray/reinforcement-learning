@@ -3,6 +3,8 @@ package org.gagneray.rl.banditproblem.actionSelectionPolicies;
 import org.gagneray.rl.banditproblem.actionSelectionPolicies.EpsilonGreedy.ActionType;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EpsilonGreedyTest {
@@ -60,6 +62,6 @@ class EpsilonGreedyTest {
     }
 
     private double getRoundedProbability(double actionTypeCountCount, int n) {
-        return Math.round((actionTypeCountCount / n) * 100) / 100.0;
+        return Math.round((actionTypeCountCount / n) * 10) / 10.0;
     }
 }
